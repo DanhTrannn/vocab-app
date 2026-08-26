@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model DaySet {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(50)
+  createdAt   DateTime     @default(now())
+  words       Word[]
+  testResults TestResult[]
+}
+
+model Word {
+  id       Int          @id @default(autoincrement())
+  daySetId Int
+  daySet   DaySet       @relation(fields: [daySetId], references: [id], onDelete: Cascade)
+  english  String       @db.VarChar(100)
+  meaning  String       @db.VarChar(255)
+  synonyms Synonym[]
+  answers  WordAnswer[]
+
+  @@unique([daySetId, english])
+}
+
+model Synonym {
+  id     Int    @id @default(autoincrement())
+  wordId Int
+  word   Word   @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  text   String @db.VarChar(100)
+}
+
+model TestResult {
+  id           Int          @id @default(autoincrement())
+  daySetId     Int
+  daySet       DaySet       @relation(fields: [daySetId], references: [id], onDelete: Cascade)
+  takenAt      DateTime     @default(now())
+  scorePercent Float
+  answers      WordAnswer[]
+}
+
+model WordAnswer {
+  id              Int        @id @default(autoincrement())
+  testResultId    Int
+  testResult      TestResult @relation(fields: [testResultId], references: [id], onDelete: Cascade)
+  wordId          Int
+  word            Word       @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  mainCorrect     Boolean
+  synonymsCorrect Int
+  synonymsTotal   Int
+}
