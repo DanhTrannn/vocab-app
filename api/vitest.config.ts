@@ -5,5 +5,7 @@ export default defineConfig({
     environment: 'node',
     globalSetup: './tests/global-setup.ts',
     setupFiles: './tests/db-reset.ts',
+    pool: 'forks',
+    poolOptions: { forks: { singleFork: true } },
   },
 });
