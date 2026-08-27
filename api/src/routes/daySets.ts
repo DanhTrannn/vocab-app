@@ -16,7 +16,7 @@ function isNotFound(err: unknown): boolean {
 
 router.get('/day-sets', wrap(async (_req, res) => {
   const sets = await prisma.daySet.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     include: {
       _count: { select: { words: true } },
       testResults: { orderBy: [{ takenAt: 'desc' }, { id: 'desc' }], take: 1, select: { scorePercent: true } },
