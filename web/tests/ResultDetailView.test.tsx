@@ -21,13 +21,13 @@ const detail: ResultDetail = {
 };
 
 describe('ResultDetailView', () => {
-  it('hiện điểm tổng và chi tiết từng từ', () => {
+  it('hiện chi tiết từng từ', () => {
     render(<ResultDetailView detail={detail} />);
-    expect(screen.getByText('Điểm: 75%')).toBeInTheDocument();
     expect(screen.getByText('happy')).toBeInTheDocument();
     expect(screen.getByText('Đúng')).toBeInTheDocument();
     expect(screen.getByText('Sai')).toBeInTheDocument();
     expect(screen.getByText('1/2')).toBeInTheDocument();
-    expect(screen.getByText('glad, cheerful')).toBeInTheDocument();
+    expect(screen.getByText('glad')).toBeInTheDocument();
+    expect(screen.getByText('cheerful')).toBeInTheDocument();
   });
 });

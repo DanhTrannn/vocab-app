@@ -45,7 +45,7 @@ function renderQuiz() {
 }
 
 function getQuizSection() {
-  const sections = screen.getAllByText('Làm test', { selector: 'h2' });
+  const sections = screen.getAllByText('Làm test', { selector: 'h1' });
   return within(sections[sections.length - 1].closest('section')!);
 }
 
@@ -92,7 +92,8 @@ describe('QuizPage', () => {
         answers: [{ wordId: 1, english: 'happy' }, { wordId: 2 }],
       }),
     );
-    expect(await screen.findByText('Điểm: 100%')).toBeInTheDocument();
+    expect(await screen.findByText('Kết quả bài test')).toBeInTheDocument();
+    expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
   it('lỗi tải đề (bộ rỗng) → hiện thông báo lỗi', async () => {

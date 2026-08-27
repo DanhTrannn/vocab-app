@@ -20,6 +20,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<Record<number, AnswerState>>({});
   const [result, setResult] = useState<ResultDetail | null>(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,8 @@ export default function QuizPage() {
         setQuestions(q.questions);
         setPronunciations(q.pronunciations);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Không tải được đề test'));
+      .catch((err) => setError(err instanceof Error ? err.message : 'Không tải được đề test'))
+      .finally(() => setLoading(false));
   }, [daySetId]);
 
   const pronunciationMap = useMemo(
@@ -40,7 +42,10 @@ export default function QuizPage() {
   const answerOf = (wordId: number): AnswerState => answers[wordId] ?? { english: '', synonyms: '' };
 
   const update = (wordId: number, patch: Partial<AnswerState>) => {
-    setAnswers((prev) => ({ ...prev, [wordId]: { ...answerOf(wordId), ...patch } }));
+    setAnswers((prev) => {
+      const current = prev[wordId] ?? { english: '', synonyms: '' };
+      return { ...prev, [wordId]: { ...current, ...patch } };
+    });
   };
 
   const handleSubmit = useCallback(async () => {
@@ -73,16 +78,39 @@ export default function QuizPage() {
     setAnswers({});
   };
 
+  const answeredCount = Object.keys(answers).filter((k) => {
+    const a = answers[Number(k)];
+    return a && (a.english.trim() !== '' || a.synonyms.trim() !== '');
+  }).length;
+
   if (result) {
     return (
-      <section className="space-y-4">
-        <h2 className="text-xl font-bold">Kết quả bài test</h2>
+      <section className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+            result.scorePercent >= 70 ? 'bg-success-50 text-success-500' : 'bg-danger-50 text-danger-500'
+          }`}>
+            {result.scorePercent >= 70 ? (
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            )}
+          </div>
+          <div>
+            <h1 className="section-title">Kết quả bài test</h1>
+            <p className="text-2xl font-bold text-primary-600">{result.scorePercent}%</p>
+          </div>
+        </div>
         <ResultDetailView detail={result} />
-        <div className="space-x-3">
-          <button type="button" onClick={restart} className="rounded bg-blue-600 px-3 py-1.5 text-white">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={restart} className="btn-primary">
             Làm lại
           </button>
-          <Link to={`/day-sets/${daySetId}/results`} className="text-blue-700 hover:underline">
+          <Link to={`/day-sets/${daySetId}/results`} className="btn-secondary">
             Xem lịch sử
           </Link>
         </div>
@@ -93,72 +121,116 @@ export default function QuizPage() {
   return (
     <section className="space-y-6">
       <nav className="text-sm">
-        <Link to={`/day-sets/${daySetId}`} className="text-blue-700 hover:underline">← Bộ từ</Link>
+        <Link to={`/day-sets/${daySetId}`} className="text-primary-600 hover:text-primary-700 transition-colors cursor-pointer">
+          &larr; Bộ từ
+        </Link>
       </nav>
-      <h2 className="text-xl font-bold">Làm test</h2>
-      {error && <p role="alert" className="text-red-600">{error}</p>}
-      {!error && !current && <p className="text-gray-500">Đang tải đề…</p>}
-      {!error && current && (
+
+      <h1 className="section-title">Làm test</h1>
+
+      {error && (
+        <div role="alert" className="flex items-center gap-2 rounded-xl bg-danger-50 border border-danger-500/20 px-4 py-3 text-sm text-danger-600">
+          <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="card p-8">
+          <div className="animate-skeleton h-6 w-48 mx-auto mb-4" />
+          <div className="animate-skeleton h-10 w-full mb-3" />
+          <div className="animate-skeleton h-10 w-full" />
+        </div>
+      )}
+
+      {!error && !loading && !current && (
+        <div className="card flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-slate-500">Không có câu hỏi nào. Hãy thêm từ vựng trước.</p>
+        </div>
+      )}
+
+      {!error && !loading && current && (
         <>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Câu {idx + 1}/{questions.length}</span>
-            <div className="h-1.5 w-48 rounded bg-gray-200">
-              <div
-                className="h-full rounded bg-blue-600"
-                style={{ width: `${((idx + 1) / questions.length) * 100}%` }}
-              />
+          <div className="flex items-center justify-between text-sm text-slate-600">
+            <span className="font-medium">
+              Câu {idx + 1}/{questions.length}
+            </span>
+            <span className="text-slate-400">
+              {answeredCount}/{questions.length} đã trả lời
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary-500 transition-all duration-300 ease-out"
+              style={{ width: `${((idx + 1) / questions.length) * 100}%` }}
+            />
+          </div>
+
+          <div className="card p-6 space-y-5">
+            <div className="flex items-center gap-2 text-lg">
+              <span className="text-slate-500">Nghĩa:</span>
+              <strong className="text-slate-900">{current.meaning}</strong>
+              {pronunciationMap.get(current.wordId) != null && (
+                <SpeakButton text={pronunciationMap.get(current.wordId)!} />
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="label">Từ tiếng Anh</span>
+                <input
+                  aria-label="Từ tiếng Anh"
+                  value={answerOf(current.wordId).english}
+                  onChange={(e) => update(current.wordId, { english: e.target.value })}
+                  className="input-field"
+                  placeholder="Nhập từ tiếng Anh..."
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="label">Từ đồng nghĩa</span>
+                <input
+                  aria-label="Từ đồng nghĩa"
+                  value={answerOf(current.wordId).synonyms}
+                  onChange={(e) => update(current.wordId, { synonyms: e.target.value })}
+                  className="input-field"
+                  placeholder="Phân tách bằng dấu phẩy..."
+                />
+              </label>
             </div>
           </div>
-          <div className="space-y-4 rounded border p-6">
-            <p className="text-lg">
-              Nghĩa: <strong>{current.meaning}</strong>
-              {pronunciationMap.get(current.wordId) != null && (
-                <>
-                  {' '}
-                  <SpeakButton text={pronunciationMap.get(current.wordId)!} />
-                </>
-              )}
-            </p>
-            <label className="flex flex-col gap-1 text-sm">
-              Từ tiếng Anh
-              <input
-                aria-label="Từ tiếng Anh"
-                value={answerOf(current.wordId).english}
-                onChange={(e) => update(current.wordId, { english: e.target.value })}
-                className="rounded border border-gray-300 px-2 py-1"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Từ đồng nghĩa
-              <input
-                aria-label="Từ đồng nghĩa"
-                value={answerOf(current.wordId).synonyms}
-                onChange={(e) => update(current.wordId, { synonyms: e.target.value })}
-                className="rounded border border-gray-300 px-2 py-1"
-              />
-            </label>
-          </div>
+
           <div className="flex items-center justify-between">
             <button
               type="button"
               disabled={idx === 0}
               onClick={() => setIdx((i) => Math.max(0, i - 1))}
-              className="rounded border px-3 py-1.5 disabled:opacity-40"
+              className="btn-secondary disabled:opacity-40"
             >
-              ← Trước
+              &larr; Trước
             </button>
             {idx < questions.length - 1 ? (
-              <button type="button" onClick={() => setIdx((i) => i + 1)} className="rounded border px-3 py-1.5">
-                Sau →
+              <button type="button" onClick={() => setIdx((i) => i + 1)} className="btn-primary">
+                Sau &rarr;
               </button>
             ) : (
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => void handleSubmit()}
-                className="rounded bg-blue-600 px-4 py-1.5 text-white disabled:opacity-50"
+                className="btn-primary"
               >
-                Nộp bài
+                {submitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Đang chấm...
+                  </span>
+                ) : (
+                  'Nộp bài'
+                )}
               </button>
             )}
           </div>

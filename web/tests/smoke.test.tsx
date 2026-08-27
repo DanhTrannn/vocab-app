@@ -14,6 +14,6 @@ describe('App shell', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Vocab App' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Từ Vựng/ })).toBeInTheDocument();
   });
 });

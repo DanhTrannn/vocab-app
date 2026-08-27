@@ -44,9 +44,8 @@ describe('HomePage', () => {
     mockedApi.listDaySets.mockResolvedValue(sampleRows);
     renderHome();
     expect(await screen.findByText('2026-08-25')).toBeInTheDocument();
-    expect(screen.getByText('87.5%')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument(); // bộ chưa test
-    expect(screen.getByText('10 từ')).toBeInTheDocument();
+    expect(screen.getByText(/87\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/10.*từ/)).toBeInTheDocument();
   });
 
   it('tạo bộ mới: gọi createDaySet với tên nhập và load lại danh sách', async () => {

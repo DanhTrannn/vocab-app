@@ -49,7 +49,8 @@ describe('DaySetPage', () => {
     renderPage();
     expect(await screen.findByText('2026-08-25')).toBeInTheDocument();
     expect(screen.getByText('happy')).toBeInTheDocument();
-    expect(screen.getByText('glad, cheerful')).toBeInTheDocument();
+    expect(screen.getByText('glad')).toBeInTheDocument();
+    expect(screen.getByText('cheerful')).toBeInTheDocument();
     expect(screen.getByLabelText('Từ tiếng Anh')).toBeInTheDocument();
   });
 

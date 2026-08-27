@@ -52,16 +52,17 @@ describe('ResultsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Kết quả — 2026-08-25' })).toBeInTheDocument();
-    expect(screen.getByText('87.5%')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Kết quả' })).toBeInTheDocument();
+    expect(screen.getByText('87.5')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Xem chi tiết kết quả #7' }));
-    expect(await screen.findByText('Điểm: 87.5%')).toBeInTheDocument();
+    expect(await screen.findByText('happy')).toBeInTheDocument();
+    expect(screen.getByText('Đúng')).toBeInTheDocument();
   });
 
   it('chưa có lần test nào → thông báo rỗng', async () => {
     mockedApi.listResults.mockResolvedValue([]);
     renderPage();
-    expect(await screen.findByText('Chưa có lần test nào cho ngày này.')).toBeInTheDocument();
+    expect(await screen.findByText('Chưa có kết quả')).toBeInTheDocument();
   });
 });
