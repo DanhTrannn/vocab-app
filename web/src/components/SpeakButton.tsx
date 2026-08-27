@@ -2,9 +2,10 @@ import { useState } from 'react';
 
 interface Props {
   text: string;
+  className?: string;
 }
 
-export default function SpeakButton({ text }: Props) {
+export default function SpeakButton({ text, className = '' }: Props) {
   const [speaking, setSpeaking] = useState(false);
 
   if (
@@ -32,11 +33,12 @@ export default function SpeakButton({ text }: Props) {
       onClick={speak}
       disabled={speaking}
       aria-label={`Phát âm ${text}`}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-lg
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg
                  text-primary-600 hover:bg-primary-50 active:scale-95
                  transition-all duration-200 cursor-pointer
                  disabled:opacity-50 disabled:cursor-not-allowed
-                 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
+                 ${className}`}
     >
       {speaking ? (
         <svg className="h-4 w-4 animate-pulse" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

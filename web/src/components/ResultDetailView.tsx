@@ -30,8 +30,9 @@ export default function ResultDetailView({ detail }: { detail: ResultDetail }) {
                 {a.declaredSynonyms.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {a.declaredSynonyms.map((s, i) => (
-                      <span key={i} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                      <span key={i} className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                         {s}
+                        <SpeakButton text={s} className="h-4 w-4" />
                       </span>
                     ))}
                   </div>
