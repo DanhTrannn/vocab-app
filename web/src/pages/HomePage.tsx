@@ -49,6 +49,9 @@ export default function HomePage() {
 
   return (
     <section className="space-y-6">
+      <h1 className="mb-6 text-2xl font-bold">
+        <Link to="/">Vocab App</Link>
+      </h1>
       <form
         className="flex items-end gap-2"
         onSubmit={(e) => {

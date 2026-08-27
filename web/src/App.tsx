@@ -1,23 +1,17 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import DaySetPage from './pages/DaySetPage';
 import QuizPage from './pages/QuizPage';
-
-function Placeholder({ label }: { label: string }) {
-  return <div className="p-8 text-gray-500">{label}</div>;
-}
+import ResultsPage from './pages/ResultsPage';
 
 export default function App() {
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <h1 className="mb-6 text-2xl font-bold">
-        <Link to="/">Từ Vựng</Link>
-      </h1>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/day-sets/:id" element={<DaySetPage />} />
         <Route path="/day-sets/:id/quiz" element={<QuizPage />} />
-        <Route path="/day-sets/:id/results" element={<Placeholder label="Kết quả" />} />
+        <Route path="/day-sets/:id/results" element={<ResultsPage />} />
       </Routes>
     </div>
   );
