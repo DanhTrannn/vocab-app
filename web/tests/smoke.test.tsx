@@ -1,16 +1,21 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 
+vi.mock('../src/api/client', () => ({
+  api: {
+    listDaySets: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 describe('App shell', () => {
-  it('render trang chủ placeholder', () => {
+  it('render trang chủ', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText('Trang chủ')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Từ Vựng' })).toBeInTheDocument();
   });
 });
