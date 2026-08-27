@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import DaySetPage from './pages/DaySetPage';
 
 function Placeholder({ label }: { label: string }) {
   return <div className="p-8 text-gray-500">{label}</div>;
@@ -13,7 +14,7 @@ export default function App() {
       </h1>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/day-sets/:id" element={<Placeholder label="Chi tiết ngày" />} />
+        <Route path="/day-sets/:id" element={<DaySetPage />} />
         <Route path="/day-sets/:id/quiz" element={<Placeholder label="Làm test" />} />
         <Route path="/day-sets/:id/results" element={<Placeholder label="Kết quả" />} />
       </Routes>
