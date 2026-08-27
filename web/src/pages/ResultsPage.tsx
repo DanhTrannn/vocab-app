@@ -59,7 +59,7 @@ export default function ResultsPage() {
                 aria-label={`Xem chi tiết kết quả #${r.id}`}
                 className="flex w-full items-center justify-between px-4 py-2 hover:bg-gray-50"
               >
-                <span>Lần #{r.id}</span>
+                <span>Lần #{r.id} — {new Date(r.takenAt).toLocaleDateString('vi-VN')}</span>
                 <span className="font-semibold">{r.scorePercent}%</span>
               </button>
             </li>
