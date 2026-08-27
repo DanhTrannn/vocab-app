@@ -72,6 +72,14 @@ describe('PUT /api/words/:id', () => {
     expect(res.body).toMatchObject({ english: 'sad', meaning: 'buồn', synonyms: ['unhappy'] });
   });
 
+  it('đổi sang english bị trùng trong bộ → 409', async () => {
+    const set = await seedSet();
+    await request(app).post(`/api/day-sets/${set.id}/words`).send({ english: 'happy', meaning: 'vui' });
+    const w2 = await prisma.word.create({ data: { daySetId: set.id, english: 'sad', meaning: 'buồn' } });
+    const res = await request(app).put(`/api/words/${w2.id}`).send({ english: 'happy', meaning: 'vui' });
+    expect(res.status).toBe(409);
+  });
+
   it('404 khi từ không tồn tại', async () => {
     expect(
       (await request(app).put('/api/words/999').send({ english: 'a', meaning: 'b' })).status,
