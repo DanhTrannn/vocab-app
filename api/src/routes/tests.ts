@@ -116,4 +116,20 @@ router.post('/day-sets/:id/tests', wrap(async (req, res) => {
   res.status(201).json(await getResultDetail(created.id));
 }));
 
+router.get('/day-sets/:id/results', wrap(async (req, res) => {
+  const id = parseId(req.params.id);
+  const set = await prisma.daySet.findUnique({ where: { id } });
+  if (!set) throw new ApiError(404, 'Day set not found');
+  const results = await prisma.testResult.findMany({
+    where: { daySetId: id },
+    orderBy: [{ takenAt: 'desc' }, { id: 'desc' }],
+    select: { id: true, takenAt: true, scorePercent: true },
+  });
+  res.json(results.map((r) => ({ id: r.id, takenAt: r.takenAt.toISOString(), scorePercent: r.scorePercent })));
+}));
+
+router.get('/results/:id', wrap(async (req, res) => {
+  res.json(await getResultDetail(parseId(req.params.id)));
+}));
+
 export default router;

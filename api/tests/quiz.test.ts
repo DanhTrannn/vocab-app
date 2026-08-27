@@ -97,3 +97,38 @@ describe('POST /api/day-sets/:id/tests', () => {
     ).toBe(404);
   });
 });
+
+describe('GET /api/day-sets/:id/results', () => {
+  it('liệt kê lịch sử mới nhất trước', async () => {
+    const set = await prisma.daySet.create({
+      data: { name: 'r', testResults: { create: [{ scorePercent: 50 }, { scorePercent: 100 }] } },
+    });
+    const res = await request(app).get(`/api/day-sets/${set.id}/results`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body[0].scorePercent).toBeGreaterThanOrEqual(res.body[1].scorePercent);
+    for (const item of res.body) {
+      expect(typeof item.takenAt).toBe('string');
+      expect(Object.keys(item).sort()).toEqual(['id', 'scorePercent', 'takenAt']);
+    }
+  });
+
+  it('bộ không tồn tại → 404', async () => {
+    expect((await request(app).get('/api/day-sets/999/results')).status).toBe(404);
+  });
+});
+
+describe('GET /api/results/:id', () => {
+  it('trả chi tiết kèm đáp án từng từ', async () => {
+    const set = await seedSetWithWords();
+    const submitted = await request(app).post(`/api/day-sets/${set.id}/tests`).send({ answers: [] });
+    const detail = await request(app).get(`/api/results/${submitted.body.id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.answers).toHaveLength(2);
+    expect(detail.body.answers[0]).toHaveProperty('declaredSynonyms');
+  });
+
+  it('404 khi không tồn tại', async () => {
+    expect((await request(app).get('/api/results/999')).status).toBe(404);
+  });
+});
