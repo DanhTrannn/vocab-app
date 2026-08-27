@@ -25,7 +25,8 @@ function isNotFound(err: unknown): boolean {
 }
 
 async function updateWord(wordId: number, reqBody: unknown, res: Response): Promise<void> {
-  const body = { ...(reqBody as Record<string, unknown>), synonyms: ((reqBody as Record<string, unknown>).synonyms ?? []).filter((s: string) => s.trim() !== '') };
+  const synonyms = ((reqBody as Record<string, unknown>).synonyms as string[] | undefined ?? []).filter((s: string) => s.trim() !== '');
+  const body = { ...(reqBody as Record<string, unknown>), synonyms };
   const data = wordUpsertSchema.parse(body);
   try {
     const word = await prisma.$transaction(async (tx) => {
