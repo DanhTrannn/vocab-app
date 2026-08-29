@@ -17,13 +17,25 @@ function splitSections(text: string): Record<string, string> {
   let currentKey = '';
   const currentLines: string[] = [];
 
+  const sectionPatterns: [string, RegExp][] = [
+    ['1', /^#?1[\.\)]:?\s*Dịch nghĩa/i],
+    ['2', /^#?2[\.\)]:?\s*Đáp án/i],
+    ['3', /^#?3[\.\)]:?\s*Giải thích/i],
+    ['4', /^#?4[\.\)]:?\s*Từ vựng/i],
+  ];
+
   for (const line of lines) {
-    const match = line.match(/^#(\d+)\.\s/);
-    if (match) {
-      if (currentKey) sections[currentKey] = currentLines.join('\n').trim();
-      currentKey = match[1];
-      currentLines.length = 0;
-    } else {
+    let matched = false;
+    for (const [key, pattern] of sectionPatterns) {
+      if (pattern.test(line)) {
+        if (currentKey) sections[currentKey] = currentLines.join('\n').trim();
+        currentKey = key;
+        currentLines.length = 0;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
       currentLines.push(line);
     }
   }
