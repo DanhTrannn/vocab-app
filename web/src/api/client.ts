@@ -2,6 +2,9 @@ import type {
   DaySetDetail,
   DaySetListItem,
   GrammarNote,
+  ImportGrammarBody,
+  ImportResult,
+  ParseResult,
   QuizResponse,
   ResultDetail,
   ResultSummary,
@@ -54,4 +57,8 @@ export const api = {
   updateGrammarNote: (id: number, title: string, content: string): Promise<GrammarNote> =>
     http(`/grammar-notes/${id}`, { method: 'PUT', body: JSON.stringify({ title, content }) }),
   deleteGrammarNote: (id: number): Promise<void> => http(`/grammar-notes/${id}`, { method: 'DELETE' }),
+  parseGrammarText: (text: string): Promise<ParseResult> =>
+    http('/grammar-notes/parse', { method: 'POST', body: JSON.stringify({ text }) }),
+  importGrammarParsed: (body: ImportGrammarBody): Promise<ImportResult> =>
+    http('/grammar-notes/import', { method: 'POST', body: JSON.stringify(body) }),
 };

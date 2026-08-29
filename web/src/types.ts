@@ -74,3 +74,29 @@ export interface GrammarNote {
   content: string;
   createdAt: string;
 }
+
+export interface ParsedWord {
+  english: string;
+  partOfSpeech: string;
+  meaning: string;
+  synonyms: string[];
+}
+
+export interface ParseResult {
+  grammarTitle: string;
+  grammarContent: string;
+  words: ParsedWord[];
+}
+
+export interface ImportGrammarBody {
+  daySetId: number;
+  grammarTitle: string;
+  grammarContent: string;
+  words: ParsedWord[];
+}
+
+export interface ImportResult {
+  grammarNote: GrammarNote;
+  wordsCreated: number;
+  wordsSkipped: number;
+}
