@@ -54,3 +54,10 @@ model WordAnswer {
   missedWords     String     @db.Text
   scorePercent    Float
 }
+
+model GrammarNote {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(200)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+}

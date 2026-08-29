@@ -1,6 +1,7 @@
 import type {
   DaySetDetail,
   DaySetListItem,
+  GrammarNote,
   QuizResponse,
   ResultDetail,
   ResultSummary,
@@ -47,4 +48,10 @@ export const api = {
     http(`/day-sets/${daySetId}/tests`, { method: 'POST', body: JSON.stringify(body) }),
   listResults: (daySetId: number): Promise<ResultSummary[]> => http(`/day-sets/${daySetId}/results`),
   getResult: (id: number): Promise<ResultDetail> => http(`/results/${id}`),
+  listGrammarNotes: (): Promise<GrammarNote[]> => http('/grammar-notes'),
+  createGrammarNote: (title: string, content: string): Promise<GrammarNote> =>
+    http('/grammar-notes', { method: 'POST', body: JSON.stringify({ title, content }) }),
+  updateGrammarNote: (id: number, title: string, content: string): Promise<GrammarNote> =>
+    http(`/grammar-notes/${id}`, { method: 'PUT', body: JSON.stringify({ title, content }) }),
+  deleteGrammarNote: (id: number): Promise<void> => http(`/grammar-notes/${id}`, { method: 'DELETE' }),
 };

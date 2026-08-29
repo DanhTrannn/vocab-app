@@ -20,6 +20,8 @@ const buildBreadcrumbs = (pathname: string): Breadcrumb[] => {
     } else {
       crumbs.push({ label: `Bộ #${parts[1]}` });
     }
+  } else if (parts[0] === 'grammar') {
+    crumbs.push({ label: 'Ngữ pháp' });
   }
 
   return crumbs;
@@ -45,6 +47,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <nav className="flex items-center gap-1 text-sm">
             <Link to="/" className="btn-ghost text-sm">
               Bộ từ
+            </Link>
+            <Link to="/grammar" className="btn-ghost text-sm">
+              Ngữ pháp
             </Link>
           </nav>
         </div>

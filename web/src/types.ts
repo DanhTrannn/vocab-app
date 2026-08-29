@@ -67,3 +67,10 @@ export interface ResultDetail {
   scorePercent: number;
   answers: WordAnswerDetail[];
 }
+
+export interface GrammarNote {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
