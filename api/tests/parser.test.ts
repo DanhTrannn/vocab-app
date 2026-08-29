@@ -37,6 +37,8 @@ Câu có chứa từ "not".
 4. Từ vựng & Từ đồng nghĩa (TOEIC)
 Authorize (v): Cho phép
 Từ đồng nghĩa: Approve, Permit, Allow.
+Annual budget (n): Ngân sách hàng năm
+Từ liên quan: Yearly financial plan, Fiscal budget.
 Finalized (v): Hoàn tất
 Từ đồng nghĩa: Completed, Settled.`;
 
@@ -62,9 +64,10 @@ describe('parseGrammarInput', () => {
     const result = parseGrammarInput(sampleWithoutHash);
     expect(result.grammarTitle).toBe('Sử dụng "Any" trong câu phủ định');
     expect(result.grammarContent).toContain('Câu có chứa từ "not"');
-    expect(result.words).toHaveLength(2);
+    expect(result.words).toHaveLength(3);
     expect(result.words[0].english).toBe('Authorize');
-    expect(result.words[1].english).toBe('Finalized');
+    expect(result.words[1].english).toBe('Annual budget');
+    expect(result.words[2].english).toBe('Finalized');
   });
 
   it('returns empty results for empty input', () => {

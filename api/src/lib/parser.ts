@@ -68,7 +68,7 @@ function parseWordsSection(raw: string): ParsedWord[] {
   let current: Partial<ParsedWord> | null = null;
 
   for (const line of lines) {
-    const wordMatch = line.match(/^(\w+)\s+\((\w+)\):\s*(.+)/);
+    const wordMatch = line.match(/^(.+?)\s+\((\w+)\):\s*(.+)/);
     if (wordMatch) {
       if (current?.english) {
         words.push(current as ParsedWord);
