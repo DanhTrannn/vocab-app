@@ -2,20 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { DaySetListItem, GrammarNote, ImportResult, ParseResult } from '../types';
 
-type Tab = 'notes' | 'import';
-
 export default function GrammarPage() {
-  const [tab, setTab] = useState<Tab>('notes');
   const [notes, setNotes] = useState<GrammarNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  // Auto-import state
+  // Modal state
+  const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Import state
   const [pasteText, setPasteText] = useState('');
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -31,31 +32,35 @@ export default function GrammarPage() {
       const [n, ds] = await Promise.all([api.listGrammarNotes(), api.listDaySets()]);
       setNotes(n);
       setDaySets(ds);
-      if (ds.length > 0 && selectedDaySetId === 0) {
-        setSelectedDaySetId(ds[0].id);
-      }
+      if (ds.length > 0 && selectedDaySetId === 0) setSelectedDaySetId(ds[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được danh sách');
     } finally {
       setLoading(false);
     }
-  }, [selectedDaySetId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  const resetForm = () => {
+  const closeFormModal = () => {
+    setShowForm(false);
     setEditingId(null);
     setTitle('');
     setContent('');
   };
 
-  const startEdit = (n: GrammarNote) => {
-    setEditingId(n.id);
-    setTitle(n.title);
-    setContent(n.content);
-    setExpandedId(n.id);
+  const openFormModal = (note?: GrammarNote) => {
+    if (note) {
+      setEditingId(note.id);
+      setTitle(note.title);
+      setContent(note.content);
+    } else {
+      setEditingId(null);
+      setTitle('');
+      setContent('');
+    }
+    setShowForm(true);
   };
 
   const handleSubmit = async () => {
@@ -70,7 +75,7 @@ export default function GrammarPage() {
       } else {
         await api.updateGrammarNote(editingId, title.trim(), content.trim());
       }
-      resetForm();
+      closeFormModal();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không lưu được');
@@ -83,7 +88,6 @@ export default function GrammarPage() {
     if (!window.confirm(`Xoá note "${n.title}"?`)) return;
     try {
       await api.deleteGrammarNote(n.id);
-      if (editingId === n.id) resetForm();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không xoá được');
@@ -95,8 +99,7 @@ export default function GrammarPage() {
     setParsing(true);
     setError('');
     try {
-      const result = await api.parseGrammarText(pasteText);
-      setParsed(result);
+      setParsed(await api.parseGrammarText(pasteText));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không parse được nội dung');
     } finally {
@@ -126,33 +129,29 @@ export default function GrammarPage() {
     }
   };
 
+  const closeImportModal = () => {
+    setShowImport(false);
+    setParsed(null);
+    setPasteText('');
+    setImportResult(null);
+  };
+
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="section-title">Ngữ pháp</h1>
-        <p className="text-sm text-slate-500 mt-1">Ghi chú quy tắc ngữ pháp hoặc dán nội dung tự tạo từ vựng</p>
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-        <button
-          type="button"
-          onClick={() => setTab('notes')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all cursor-pointer ${
-            tab === 'notes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          Ghi chú thủ công
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('import')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all cursor-pointer ${
-            tab === 'import' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-          }`}
-        >
-          Tạo từ tự động
-        </button>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="section-title">Ngữ pháp</h1>
+          <p className="text-sm text-slate-500 mt-1">{notes.length} ghi chú</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => openFormModal()} className="btn-primary text-sm">
+            + Thêm note
+          </button>
+          <button type="button" onClick={() => { setShowImport(true); setImportResult(null); }} className="btn-secondary text-sm">
+            Dán TOEIC
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -164,80 +163,82 @@ export default function GrammarPage() {
         </div>
       )}
 
-      {/* Tab: Notes */}
-      {tab === 'notes' && (
-        <>
-          {loading && (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="card p-4">
-                  <div className="animate-skeleton h-5 w-40 mb-2" />
-                  <div className="animate-skeleton h-4 w-full" />
-                </div>
-              ))}
+      {/* Note list */}
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="card p-4">
+              <div className="animate-skeleton h-5 w-40 mb-2" />
+              <div className="animate-skeleton h-4 w-full" />
             </div>
-          )}
+          ))}
+        </div>
+      )}
 
-          {!loading && notes.length === 0 && !editingId && (
-            <div className="card flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
-                <svg className="h-7 w-7 text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+      {!loading && notes.length === 0 && (
+        <div className="card flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+            <svg className="h-7 w-7 text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-1">Chưa có note nào</h3>
+          <p className="text-sm text-slate-500 max-w-xs">Bấm "+ Thêm note" hoặc "Dán TOEIC" để bắt đầu!</p>
+        </div>
+      )}
+
+      {!loading && notes.length > 0 && (
+        <div className="space-y-2">
+          {notes.map((n) => (
+            <div key={n.id} className="card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <span className="font-semibold text-slate-900">{n.title}</span>
+                <svg
+                  className={`h-5 w-5 text-slate-400 transition-transform ${expandedId === n.id ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                 </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">Chưa có note nào</h3>
-              <p className="text-sm text-slate-500 max-w-xs">
-                Thêm ghi chú ngữ pháp bên dưới hoặc dùng tab "Tạo từ tự động"!
-              </p>
-            </div>
-          )}
-
-          {!loading && notes.length > 0 && (
-            <div className="space-y-2">
-              {notes.map((n) => (
-                <div key={n.id} className="card overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
-                    className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
-                  >
-                    <span className="font-semibold text-slate-900">{n.title}</span>
-                    <svg
-                      className={`h-5 w-5 text-slate-400 transition-transform ${expandedId === n.id ? 'rotate-180' : ''}`}
-                      fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+              </button>
+              {expandedId === n.id && (
+                <div className="px-4 pb-4 border-t border-slate-100">
+                  <pre className="whitespace-pre-wrap text-sm text-slate-700 mt-3 font-sans">{n.content}</pre>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button type="button" onClick={() => openFormModal(n)} className="btn-ghost text-sm">Sửa</button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(n)}
+                      className="text-sm text-danger-500 hover:text-danger-600 hover:bg-danger-50 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                    </svg>
-                  </button>
-                  {expandedId === n.id && (
-                    <div className="px-4 pb-4 border-t border-slate-100">
-                      <pre className="whitespace-pre-wrap text-sm text-slate-700 mt-3 font-sans">{n.content}</pre>
-                      <div className="flex items-center gap-2 mt-3">
-                        <button type="button" onClick={() => startEdit(n)} className="btn-ghost text-sm">
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(n)}
-                          className="text-sm text-danger-500 hover:text-danger-600 hover:bg-danger-50 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-                        >
-                          Xoá
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                      Xoá
+                    </button>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          ))}
+        </div>
+      )}
 
-          <form
-            className="card p-5 space-y-4"
-            onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
-          >
-            <h3 className="font-semibold text-slate-900">
-              {editingId == null ? 'Thêm note mới' : 'Sửa note'}
-            </h3>
+      {/* Modal: Add/Edit note */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={closeFormModal} />
+          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">
+                {editingId == null ? 'Thêm note mới' : 'Sửa note'}
+              </h2>
+              <button type="button" onClick={closeFormModal} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <label className="flex flex-col gap-1 text-sm">
               <span className="label">Tiêu đề</span>
               <input
@@ -246,6 +247,7 @@ export default function GrammarPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 className="input-field"
                 placeholder="Thì hiện tại đơn"
+                autoFocus
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -254,27 +256,34 @@ export default function GrammarPage() {
                 aria-label="Nội dung"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="input-field min-h-[120px] resize-y"
+                className="input-field min-h-[150px] resize-y"
                 placeholder="Công thức: S + V(s/es)&#10;Ví dụ: She plays tennis every day."
               />
             </label>
-            <div className="flex items-center gap-2">
-              <button type="submit" disabled={saving} className="btn-primary">
+            <div className="flex items-center justify-end gap-2">
+              <button type="button" onClick={closeFormModal} className="btn-ghost">Huỷ</button>
+              <button type="button" onClick={() => void handleSubmit()} disabled={saving} className="btn-primary">
                 {saving ? 'Đang lưu...' : editingId == null ? 'Thêm note' : 'Lưu thay đổi'}
               </button>
-              {editingId != null && (
-                <button type="button" onClick={resetForm} className="btn-ghost">Huỷ</button>
-              )}
             </div>
-          </form>
-        </>
+          </div>
+        </div>
       )}
 
-      {/* Tab: Auto-import */}
-      {tab === 'import' && (
-        <>
-          <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-slate-900">Dán nội dung TOEIC</h3>
+      {/* Modal: Import TOEIC */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={closeImportModal} />
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Dán nội dung TOEIC</h2>
+              <button type="button" onClick={closeImportModal} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
             <label className="flex flex-col gap-1 text-sm">
               <span className="label">Chọn bộ từ để thêm từ mới</span>
               <select
@@ -288,87 +297,86 @@ export default function GrammarPage() {
                 ))}
               </select>
             </label>
+
             <label className="flex flex-col gap-1 text-sm">
               <span className="label">Nội dung dán vào đây</span>
               <textarea
                 aria-label="Nội dung dán"
                 value={pasteText}
                 onChange={(e) => setPasteText(e.target.value)}
-                className="input-field min-h-[200px] resize-y font-mono text-sm"
-                placeholder="#1. Dịch nghĩa câu hỏi...&#10;#2. Đáp án chính xác...&#10;#3. Giải thích chi tiết...&#10;#4. Từ vựng & Từ đồng nghĩa..."
+                className="input-field min-h-[180px] resize-y font-mono text-sm"
+                placeholder="Dán nội dung TOEIC vào đây..."
               />
             </label>
+
             <button
               type="button"
               onClick={() => void handleParse()}
               disabled={parsing || pasteText.trim() === ''}
-              className="btn-primary"
+              className="btn-primary w-full"
             >
               {parsing ? 'Đang phân tích...' : 'Phân tích nội dung'}
             </button>
-          </div>
 
-          {parsed && (
-            <div className="card p-5 space-y-4">
-              <h3 className="font-semibold text-slate-900">Kết quả phân tích</h3>
+            {parsed && (
+              <div className="space-y-3 border-t border-slate-200 pt-4">
+                <h3 className="font-semibold text-slate-900">Kết quả phân tích</h3>
 
-              <div className="space-y-2">
-                <div>
-                  <span className="text-xs font-medium text-slate-500 uppercase">Grammar note:</span>
-                  <p className="text-sm font-medium text-slate-900 mt-0.5">{parsed.grammarTitle || '(không tìm thấy)'}</p>
-                </div>
-                {parsed.grammarContent && (
-                  <pre className="whitespace-pre-wrap text-sm text-slate-600 bg-slate-50 rounded-lg p-3 font-sans">{parsed.grammarContent}</pre>
-                )}
-              </div>
-
-              {parsed.words.length > 0 && (
-                <div>
-                  <span className="text-xs font-medium text-slate-500 uppercase">Từ vựng ({parsed.words.length}):</span>
-                  <div className="mt-2 space-y-2">
-                    {parsed.words.map((w, i) => (
-                      <div key={i} className="flex items-start gap-3 text-sm bg-slate-50 rounded-lg p-3">
-                        <span className="font-semibold text-slate-900">{w.english}</span>
-                        <span className="text-xs text-slate-400 mt-0.5">({w.partOfSpeech})</span>
-                        <span className="text-slate-600">{w.meaning}</span>
-                        {w.synonyms.length > 0 && (
-                          <span className="text-xs text-slate-400">→ {w.synonyms.join(', ')}</span>
-                        )}
-                      </div>
-                    ))}
+                {parsed.grammarTitle && (
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <span className="text-xs font-medium text-slate-500 uppercase">Grammar note:</span>
+                    <p className="text-sm font-medium text-slate-900 mt-0.5">{parsed.grammarTitle}</p>
+                    {parsed.grammarContent && (
+                      <pre className="whitespace-pre-wrap text-sm text-slate-600 mt-2 font-sans">{parsed.grammarContent}</pre>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {parsed.words.length === 0 && !parsed.grammarTitle && (
-                <p className="text-sm text-danger-500">Không tìm thấy nội dung. Hãy kiểm tra format dữ liệu.</p>
-              )}
+                {parsed.words.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-slate-500 uppercase">Từ vựng ({parsed.words.length}):</span>
+                    <div className="mt-2 space-y-1.5">
+                      {parsed.words.map((w, i) => (
+                        <div key={i} className="flex items-baseline gap-2 text-sm bg-slate-50 rounded-lg px-3 py-2">
+                          <span className="font-semibold text-slate-900">{w.english}</span>
+                          <span className="text-xs text-slate-400">({w.partOfSpeech})</span>
+                          <span className="text-slate-600">{w.meaning}</span>
+                          {w.synonyms.length > 0 && (
+                            <span className="text-xs text-slate-400 hidden sm:inline">→ {w.synonyms.join(', ')}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <button
-                type="button"
-                onClick={() => void handleImport()}
-                disabled={importing || selectedDaySetId === 0}
-                className="btn-primary"
-              >
-                {importing ? 'Đang lưu...' : 'Lưu tất cả'}
-              </button>
-            </div>
-          )}
+                {parsed.words.length === 0 && !parsed.grammarTitle && (
+                  <p className="text-sm text-danger-500">Không tìm thấy nội dung. Hãy kiểm tra format dữ liệu.</p>
+                )}
 
-          {importResult && (
-            <div className="card p-5 bg-success-50 border border-success-500/20">
-              <h3 className="font-semibold text-success-700 mb-2">Import thành công!</h3>
-              <p className="text-sm text-success-600">
-                Đã tạo note "{importResult.grammarNote.title}".
-                Thêm {importResult.wordsCreated} từ mới
-                {importResult.wordsSkipped > 0 && `, bỏ qua ${importResult.wordsSkipped} từ đã tồn tại`}.
-              </p>
-              <button type="button" onClick={() => setImportResult(null)} className="btn-ghost text-sm mt-2">
-                Đóng
-              </button>
-            </div>
-          )}
-        </>
+                <button
+                  type="button"
+                  onClick={() => void handleImport()}
+                  disabled={importing || selectedDaySetId === 0}
+                  className="btn-primary w-full"
+                >
+                  {importing ? 'Đang lưu...' : 'Lưu tất cả'}
+                </button>
+              </div>
+            )}
+
+            {importResult && (
+              <div className="rounded-xl bg-success-50 border border-success-500/20 p-4">
+                <h3 className="font-semibold text-success-700 mb-1">Import thành công!</h3>
+                <p className="text-sm text-success-600">
+                  Đã tạo note "{importResult.grammarNote.title}".
+                  Thêm {importResult.wordsCreated} từ mới
+                  {importResult.wordsSkipped > 0 && `, bỏ qua ${importResult.wordsSkipped} từ đã tồn tại`}.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </section>
   );
