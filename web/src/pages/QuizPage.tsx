@@ -5,11 +5,6 @@ import SpeakButton from '../components/SpeakButton';
 import ResultDetailView from '../components/ResultDetailView';
 import type { AnswerPayload, Pronunciation, QuizQuestion, ResultDetail } from '../types';
 
-interface AnswerState {
-  english: string;
-  synonyms: string;
-}
-
 export default function QuizPage() {
   const { id } = useParams();
   const daySetId = Number(id);
@@ -17,7 +12,7 @@ export default function QuizPage() {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [pronunciations, setPronunciations] = useState<Pronunciation[]>([]);
   const [idx, setIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, AnswerState>>({});
+  const [answers, setAnswers] = useState<Record<number, string>>({});
   const [result, setResult] = useState<ResultDetail | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,25 +34,20 @@ export default function QuizPage() {
   );
 
   const current = questions[idx];
-  const answerOf = (wordId: number): AnswerState => answers[wordId] ?? { english: '', synonyms: '' };
 
-  const update = (wordId: number, patch: Partial<AnswerState>) => {
-    setAnswers((prev) => {
-      const current = prev[wordId] ?? { english: '', synonyms: '' };
-      return { ...prev, [wordId]: { ...current, ...patch } };
-    });
+  const updateAnswer = (wordId: number, value: string) => {
+    setAnswers((prev) => ({ ...prev, [wordId]: value }));
   };
 
   const handleSubmit = useCallback(async () => {
     const payload = {
       answers: questions.map((q): AnswerPayload => {
-        const a = answerOf(q.wordId);
-        const out: AnswerPayload = { wordId: q.wordId };
-        const en = a.english.trim();
-        const syns = a.synonyms.split(',').map((s) => s.trim()).filter(Boolean);
-        if (en !== '') out.english = en;
-        if (syns.length > 0) out.synonyms = syns;
-        return out;
+        const raw = answers[q.wordId] ?? '';
+        const words = raw.split(',').map((s) => s.trim()).filter(Boolean);
+        return {
+          wordId: q.wordId,
+          synonyms: words.length > 0 ? words : undefined,
+        };
       }),
     };
     setSubmitting(true);
@@ -69,7 +59,6 @@ export default function QuizPage() {
     } finally {
       setSubmitting(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, daySetId, questions]);
 
   const restart = () => {
@@ -78,10 +67,7 @@ export default function QuizPage() {
     setAnswers({});
   };
 
-  const answeredCount = Object.keys(answers).filter((k) => {
-    const a = answers[Number(k)];
-    return a && (a.english.trim() !== '' || a.synonyms.trim() !== '');
-  }).length;
+  const answeredCount = Object.keys(answers).filter((k) => (answers[Number(k)] ?? '').trim() !== '').length;
 
   if (result) {
     return (
@@ -176,28 +162,16 @@ export default function QuizPage() {
                 <SpeakButton text={pronunciationMap.get(current.wordId)!} />
               )}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="label">Từ tiếng Anh</span>
-                <input
-                  aria-label="Từ tiếng Anh"
-                  value={answerOf(current.wordId).english}
-                  onChange={(e) => update(current.wordId, { english: e.target.value })}
-                  className="input-field"
-                  placeholder="Nhập từ tiếng Anh..."
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="label">Từ đồng nghĩa</span>
-                <input
-                  aria-label="Từ đồng nghĩa"
-                  value={answerOf(current.wordId).synonyms}
-                  onChange={(e) => update(current.wordId, { synonyms: e.target.value })}
-                  className="input-field"
-                  placeholder="Phân tách bằng dấu phẩy..."
-                />
-              </label>
-            </div>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="label">Từ đã nhớ (phân tách bằng dấu phẩy)</span>
+              <input
+                aria-label="Từ đã nhớ"
+                value={answers[current.wordId] ?? ''}
+                onChange={(e) => updateAnswer(current.wordId, e.target.value)}
+                className="input-field"
+                placeholder="happy, glad, cheerful..."
+              />
+            </label>
           </div>
 
           <div className="flex items-center justify-between">

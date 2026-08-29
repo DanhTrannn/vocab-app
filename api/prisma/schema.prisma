@@ -49,7 +49,8 @@ model WordAnswer {
   testResult      TestResult @relation(fields: [testResultId], references: [id], onDelete: Cascade)
   wordId          Int
   word            Word       @relation(fields: [wordId], references: [id], onDelete: Cascade)
-  mainCorrect     Boolean
-  synonymsCorrect Int
-  synonymsTotal   Int
+  expectedWords   String     @db.Text
+  correctWords    String     @db.Text
+  missedWords     String     @db.Text
+  scorePercent    Float
 }

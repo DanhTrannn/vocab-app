@@ -37,7 +37,6 @@ export interface QuizResponse {
 
 export interface AnswerPayload {
   wordId: number;
-  english?: string;
   synonyms?: string[];
 }
 
@@ -55,10 +54,10 @@ export interface WordAnswerDetail {
   wordId: number;
   english: string;
   meaning: string;
-  declaredSynonyms: string[];
-  mainCorrect: boolean;
-  synonymsCorrect: number;
-  synonymsTotal: number;
+  expectedWords: string[];
+  correctWords: string[];
+  missedWords: string[];
+  scorePercent: number;
 }
 
 export interface ResultDetail {

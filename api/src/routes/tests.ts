@@ -14,10 +14,10 @@ export interface WordAnswerDetail {
   wordId: number;
   english: string;
   meaning: string;
-  declaredSynonyms: string[];
-  mainCorrect: boolean;
-  synonymsCorrect: number;
-  synonymsTotal: number;
+  expectedWords: string[];
+  correctWords: string[];
+  missedWords: string[];
+  scorePercent: number;
 }
 
 export interface ResultDetail {
@@ -31,23 +31,31 @@ export interface ResultDetail {
 export async function getResultDetail(resultId: number): Promise<ResultDetail> {
   const r = await prisma.testResult.findUnique({
     where: { id: resultId },
-    include: { answers: { include: { word: { include: { synonyms: true } } } } },
+    include: { answers: { include: { word: true } } },
   });
   if (!r) throw new ApiError(404, 'Result not found');
+
+  const answers: WordAnswerDetail[] = r.answers.map((a) => {
+    const expected = JSON.parse(a.expectedWords) as string[];
+    const correct = JSON.parse(a.correctWords) as string[];
+    const missed = JSON.parse(a.missedWords) as string[];
+    return {
+      wordId: a.wordId,
+      english: a.word.english,
+      meaning: a.word.meaning,
+      expectedWords: expected,
+      correctWords: correct,
+      missedWords: missed,
+      scorePercent: a.scorePercent,
+    };
+  });
+
   return {
     id: r.id,
     daySetId: r.daySetId,
     takenAt: r.takenAt.toISOString(),
     scorePercent: r.scorePercent,
-    answers: r.answers.map((a) => ({
-      wordId: a.wordId,
-      english: a.word.english,
-      meaning: a.word.meaning,
-      declaredSynonyms: a.word.synonyms.map((s) => s.text),
-      mainCorrect: a.mainCorrect,
-      synonymsCorrect: a.synonymsCorrect,
-      synonymsTotal: a.synonymsTotal,
-    })),
+    answers,
   };
 }
 
@@ -89,14 +97,21 @@ router.post('/day-sets/:id/tests', wrap(async (req, res) => {
 
   const words = await prisma.word.findMany({ where: { daySetId: id }, include: { synonyms: true } });
   const byId = new Map(body.answers.map((a) => [a.wordId, a]));
+
   const graded = gradeTest(
-    words.map((w) => ({
-      wordId: w.id,
-      english: w.english,
-      synonyms: w.synonyms.map((s) => s.text),
-      answerEnglish: byId.get(w.id)?.english,
-      answerSynonyms: byId.get(w.id)?.synonyms,
-    })),
+    words.map((w) => {
+      const answer = byId.get(w.id);
+      const answerWords = [
+        ...(answer?.english ? [answer.english] : []),
+        ...(answer?.synonyms ?? []),
+      ];
+      return {
+        wordId: w.id,
+        english: w.english,
+        synonyms: w.synonyms.map((s) => s.text),
+        answerWords: answerWords.length > 0 ? answerWords : undefined,
+      };
+    }),
   );
 
   const created = await prisma.testResult.create({
@@ -106,9 +121,10 @@ router.post('/day-sets/:id/tests', wrap(async (req, res) => {
       answers: {
         create: graded.perWord.map((g) => ({
           wordId: g.wordId,
-          mainCorrect: g.mainCorrect,
-          synonymsCorrect: g.synonymsCorrect,
-          synonymsTotal: g.synonymsTotal,
+          expectedWords: JSON.stringify([...g.correctWords, ...g.missedWords]),
+          correctWords: JSON.stringify(g.correctWords),
+          missedWords: JSON.stringify(g.missedWords),
+          scorePercent: g.scorePercent,
         })),
       },
     },

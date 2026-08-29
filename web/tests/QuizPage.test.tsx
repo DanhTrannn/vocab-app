@@ -29,8 +29,8 @@ const result: ResultDetail = {
   takenAt: '2026-08-25T10:00:00.000Z',
   scorePercent: 100,
   answers: [
-    { wordId: 1, english: 'happy', meaning: 'vui vẻ', declaredSynonyms: ['glad'], mainCorrect: true, synonymsCorrect: 1, synonymsTotal: 1 },
-    { wordId: 2, english: 'run', meaning: 'chạy', declaredSynonyms: [], mainCorrect: true, synonymsCorrect: 0, synonymsTotal: 0 },
+    { wordId: 1, english: 'happy', meaning: 'vui vẻ', expectedWords: ['happy', 'glad'], correctWords: ['happy', 'glad'], missedWords: [], scorePercent: 100 },
+    { wordId: 2, english: 'run', meaning: 'chạy', expectedWords: ['run'], correctWords: ['run'], missedWords: [], scorePercent: 100 },
   ],
 };
 
@@ -63,19 +63,17 @@ describe('QuizPage', () => {
     expect(screen.getByText('Câu 1/2')).toBeInTheDocument();
 
     const sec = getQuizSection();
-    await user.type(sec.getByLabelText('Từ tiếng Anh'), 'happy');
-    await user.type(sec.getByLabelText('Từ đồng nghĩa'), 'glad');
+    await user.type(sec.getByLabelText('Từ đã nhớ'), 'happy, glad');
     await user.click(sec.getByRole('button', { name: 'Sau →' }));
 
     expect(sec.getByText('Câu 2/2')).toBeInTheDocument();
     expect(sec.getByText('chạy')).toBeInTheDocument();
 
     await user.click(sec.getByRole('button', { name: '← Trước' }));
-    expect(sec.getByLabelText('Từ tiếng Anh')).toHaveValue('happy');
-    expect(sec.getByLabelText('Từ đồng nghĩa')).toHaveValue('glad');
+    expect(sec.getByLabelText('Từ đã nhớ')).toHaveValue('happy, glad');
   });
 
-  it('nộp bài → gọi submitTest với answers đầy đủ (bỏ ô trống) và hiện kết quả', async () => {
+  it('nộp bài → gọi submitTest và hiện kết quả', async () => {
     mockedApi.getQuiz.mockResolvedValue(quiz);
     mockedApi.submitTest.mockResolvedValue(result);
     const user = userEvent.setup();
@@ -83,17 +81,17 @@ describe('QuizPage', () => {
 
     await screen.findByText('vui vẻ');
     const sec = getQuizSection();
-    await user.type(sec.getByLabelText('Từ tiếng Anh'), 'happy');
+    await user.type(sec.getByLabelText('Từ đã nhớ'), 'happy, glad');
     await user.click(sec.getByRole('button', { name: 'Sau →' }));
     await user.click(sec.getByRole('button', { name: 'Nộp bài' }));
 
     await vi.waitFor(() =>
       expect(mockedApi.submitTest).toHaveBeenCalledWith(1, {
-        answers: [{ wordId: 1, english: 'happy' }, { wordId: 2 }],
+        answers: [{ wordId: 1, synonyms: ['happy', 'glad'] }, { wordId: 2 }],
       }),
     );
     expect(await screen.findByText('Kết quả bài test')).toBeInTheDocument();
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getAllByText(/100/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('lỗi tải đề (bộ rỗng) → hiện thông báo lỗi', async () => {

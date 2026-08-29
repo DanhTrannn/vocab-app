@@ -26,7 +26,13 @@ const detail: ResultDetail = {
   takenAt: '2026-08-25T10:00:00.000Z',
   scorePercent: 87.5,
   answers: [
-    { wordId: 1, english: 'happy', meaning: 'vui vẻ', declaredSynonyms: ['glad'], mainCorrect: true, synonymsCorrect: 1, synonymsTotal: 1 },
+    {
+      wordId: 1, english: 'happy', meaning: 'vui vẻ',
+      expectedWords: ['happy', 'glad'],
+      correctWords: ['happy', 'glad'],
+      missedWords: [],
+      scorePercent: 100,
+    },
   ],
 };
 
@@ -57,7 +63,6 @@ describe('ResultsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Xem chi tiết kết quả #7' }));
     expect(await screen.findByText('happy')).toBeInTheDocument();
-    expect(screen.getByText('Đúng')).toBeInTheDocument();
   });
 
   it('chưa có lần test nào → thông báo rỗng', async () => {

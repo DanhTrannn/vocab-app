@@ -10,24 +10,30 @@ const detail: ResultDetail = {
   scorePercent: 75,
   answers: [
     {
-      wordId: 1, english: 'happy', meaning: 'vui vẻ', declaredSynonyms: ['glad', 'cheerful'],
-      mainCorrect: true, synonymsCorrect: 1, synonymsTotal: 2,
+      wordId: 1, english: 'happy', meaning: 'vui vẻ',
+      expectedWords: ['happy', 'glad', 'cheerful'],
+      correctWords: ['happy', 'glad'],
+      missedWords: ['cheerful'],
+      scorePercent: 66.7,
     },
     {
-      wordId: 2, english: 'run', meaning: 'chạy', declaredSynonyms: [],
-      mainCorrect: false, synonymsCorrect: 0, synonymsTotal: 0,
+      wordId: 2, english: 'run', meaning: 'chạy',
+      expectedWords: ['run'],
+      correctWords: [],
+      missedWords: ['run'],
+      scorePercent: 0,
     },
   ],
 };
 
 describe('ResultDetailView', () => {
-  it('hiện chi tiết từng từ', () => {
+  it('hiện từ đã nhớ và từ chưa nhớ', () => {
     render(<ResultDetailView detail={detail} />);
     expect(screen.getByText('happy')).toBeInTheDocument();
-    expect(screen.getByText('Đúng')).toBeInTheDocument();
-    expect(screen.getByText('Sai')).toBeInTheDocument();
-    expect(screen.getByText('1/2')).toBeInTheDocument();
     expect(screen.getByText('glad')).toBeInTheDocument();
     expect(screen.getByText('cheerful')).toBeInTheDocument();
+    expect(screen.getByText('run')).toBeInTheDocument();
+    expect(screen.getByText('66.7%')).toBeInTheDocument();
+    expect(screen.getByText('0%')).toBeInTheDocument();
   });
 });

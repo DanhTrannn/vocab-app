@@ -16,43 +16,70 @@ export interface GradeWordInput {
   wordId: number;
   english: string;
   synonyms: string[];
-  answerEnglish?: string | null;
-  answerSynonyms?: string[] | null;
+  answerWords?: string[] | null;
 }
 
 export interface GradedWord {
   wordId: number;
-  mainCorrect: boolean;
-  synonymsCorrect: number;
-  synonymsTotal: number;
+  correctWords: string[];
+  missedWords: string[];
+  totalExpected: number;
   scorePercent: number;
+}
+
+/** Flatten english + synonyms into a deduplicated list of expected words. */
+function expectedWords(input: GradeWordInput): string[] {
+  return dedupeByNormalized([input.english, ...(input.synonyms ?? [])]);
+}
+
+/** Match user answers against expected words, case-insensitive. Returns { matched, missed }. */
+function matchWords(
+  userWords: string[],
+  expected: string[],
+): { matched: string[]; missed: string[] } {
+  const expectedNorm = new Map(expected.map((w) => [normalize(w), w]));
+  const matchedNorm = new Set<string>();
+  const matched: string[] = [];
+  const missed: string[] = [];
+
+  for (const w of userWords) {
+    const key = normalize(w);
+    if (key === '' || matchedNorm.has(key)) continue;
+    if (expectedNorm.has(key)) {
+      matchedNorm.add(key);
+      matched.push(expectedNorm.get(key)!);
+    }
+  }
+
+  for (const w of expected) {
+    if (!matchedNorm.has(normalize(w))) missed.push(w);
+  }
+
+  return { matched, missed };
 }
 
 /** Điểm 1 từ (%), làm tròn 1 chữ số thập phân. */
 export function gradeWord(input: GradeWordInput): GradedWord {
-  const declared = dedupeByNormalized(input.synonyms ?? []);
-  const total = 1 + declared.length;
+  const expected = expectedWords(input);
+  const total = expected.length;
+  if (total === 0) {
+    return { wordId: input.wordId, correctWords: [], missedWords: [], totalExpected: 0, scorePercent: 0 };
+  }
 
-  const answer = input.answerEnglish == null ? '' : normalize(input.answerEnglish);
-  const mainCorrect = answer !== '' && answer === normalize(input.english);
+  const userWords = input.answerWords == null ? [] : dedupeByNormalized(input.answerWords);
+  const { matched, missed } = matchWords(userWords, expected);
 
-  const answered = input.answerSynonyms == null ? [] : dedupeByNormalized(input.answerSynonyms);
-  const declaredSet = new Set(declared.map(normalize));
-  const synonymsCorrect = answered.filter((a) => declaredSet.has(normalize(a))).length;
-
-  const scorePercent = Math.round((((mainCorrect ? 1 : 0) + synonymsCorrect) / total) * 1000) / 10;
-  return { wordId: input.wordId, mainCorrect, synonymsCorrect, synonymsTotal: declared.length, scorePercent };
+  const scorePercent = Math.round((matched.length / total) * 1000) / 10;
+  return { wordId: input.wordId, correctWords: matched, missedWords: missed, totalExpected: total, scorePercent };
 }
 
 function rawScore(input: GradeWordInput): number {
-  const declared = dedupeByNormalized(input.synonyms ?? []);
-  const total = 1 + declared.length;
-  const answer = input.answerEnglish == null ? '' : normalize(input.answerEnglish);
-  const mainCorrect = answer !== '' && answer === normalize(input.english);
-  const answered = input.answerSynonyms == null ? [] : dedupeByNormalized(input.answerSynonyms);
-  const declaredSet = new Set(declared.map(normalize));
-  const synonymsCorrect = answered.filter((a) => declaredSet.has(normalize(a))).length;
-  return ((mainCorrect ? 1 : 0) + synonymsCorrect) / total * 100;
+  const expected = expectedWords(input);
+  const total = expected.length;
+  if (total === 0) return 0;
+  const userWords = input.answerWords == null ? [] : dedupeByNormalized(input.answerWords);
+  const { matched } = matchWords(userWords, expected);
+  return (matched.length / total) * 100;
 }
 
 /** Điểm bài test = trung bình điểm các từ (%), làm tròn 1 chữ số thập phân. */

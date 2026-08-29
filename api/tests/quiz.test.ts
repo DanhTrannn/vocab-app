@@ -55,7 +55,7 @@ describe('POST /api/day-sets/:id/tests', () => {
 
     const res = await request(app).post(`/api/day-sets/${set.id}/tests`).send({
       answers: [
-        { wordId: happy.id, english: 'HAPPY', synonyms: ['glad'] }, // (1+1)/3 ≈ 66.7%
+        { wordId: happy.id, english: 'HAPPY', synonyms: ['glad'] }, // 2/3 ≈ 66.7%
         { wordId: run.id, english: 'wrong' },                       // 0%
       ],
     });
@@ -80,8 +80,8 @@ describe('POST /api/day-sets/:id/tests', () => {
     });
     expect(res.body.answers).toHaveLength(2);
     const runAnswer = res.body.answers.find((a: { english: string }) => a.english === 'run');
-    expect(runAnswer.mainCorrect).toBe(false);
-    expect(runAnswer.synonymsCorrect).toBe(0);
+    expect(runAnswer.correctWords).toEqual([]);
+    expect(runAnswer.missedWords).toEqual(['run']);
   });
 
   it('400 nếu bộ rỗng', async () => {
@@ -125,7 +125,9 @@ describe('GET /api/results/:id', () => {
     const detail = await request(app).get(`/api/results/${submitted.body.id}`);
     expect(detail.status).toBe(200);
     expect(detail.body.answers).toHaveLength(2);
-    expect(detail.body.answers[0]).toHaveProperty('declaredSynonyms');
+    expect(detail.body.answers[0]).toHaveProperty('expectedWords');
+    expect(detail.body.answers[0]).toHaveProperty('correctWords');
+    expect(detail.body.answers[0]).toHaveProperty('missedWords');
   });
 
   it('404 khi không tồn tại', async () => {
