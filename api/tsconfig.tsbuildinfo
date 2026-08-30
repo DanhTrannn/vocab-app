@@ -1,0 +1,1 @@
+{"root":["./src/app.ts","./src/schemas.ts","./src/server.ts","./src/lib/errors.ts","./src/lib/parser.ts","./src/lib/prisma.ts","./src/routes/daySets.ts","./src/routes/grammarNotes.ts","./src/routes/tests.ts","./src/routes/words.ts","./src/scoring/scoring.ts"],"version":"5.9.3"}
